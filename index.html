@@ -2,47 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR World to 3D Drive</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile AR Track Builder & 3D Ride</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #050505; }
+        /* Mobile safeguards to prevent scrolling/refreshing while drawing */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #030305; 
+            touch-action: none; 
+            -webkit-user-select: none; 
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
         
-        /* Dark Glassmorphism UI */
+        /* Dark Glassmorphism UI with Blue/Red Glow Effects */
         #ui-container {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 15, 30, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 20px; border-radius: 24px; display: none; z-index: 100;
-            text-align: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); width: 85%; max-width: 380px;
+            position: absolute; bottom: 35px; left: 50%; transform: translateX(-50%);
+            background: rgba(5, 10, 20, 0.65); 
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 150, 255, 0.2);
+            padding: 22px; border-radius: 28px; display: none; z-index: 100;
+            text-align: center; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 100, 255, 0.2), inset 0 0 15px rgba(255, 0, 50, 0.1);
+            width: 88%; max-width: 400px;
         }
         
-        h3 { margin: 0 0 15px 0; color: #fff; font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+        h3 { margin: 0 0 18px 0; color: #e0e0e0; font-size: 15px; font-weight: 700; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
 
+        /* Enlarged for mobile thumbs */
         .color-btn {
-            width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
-            display: inline-block; margin: 0 6px; cursor: pointer; transition: transform 0.2s;
+            width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
+            display: inline-block; margin: 0 8px; cursor: pointer; transition: transform 0.1s ease-out;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .color-btn:active { transform: scale(0.8); }
+        .color-btn:active { transform: scale(0.85); }
 
-        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        .controls { margin-top: 22px; display: flex; gap: 12px; }
         
         button {
-            flex: 1; padding: 12px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold;
-            text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; transition: background 0.3s;
+            flex: 1; padding: 14px; border: none; border-radius: 14px; cursor: pointer; font-weight: 800;
+            text-transform: uppercase; font-size: 13px; transition: all 0.2s; letter-spacing: 1px;
         }
-        .btn-clear { background: rgba(255, 50, 50, 0.2); color: #ff4d4d; border: 1px solid rgba(255, 50, 50, 0.4); }
-        .btn-drive { background: linear-gradient(135deg, #0055ff, #00aaff); color: white; box-shadow: 0 4px 15px rgba(0, 85, 255, 0.4); }
+        
+        .btn-clear { 
+            background: rgba(20, 0, 0, 0.7); color: #ff4d4d; 
+            border: 1px solid rgba(255, 50, 50, 0.5); 
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
+        }
+        .btn-clear:active { background: rgba(255, 0, 0, 0.3); }
+
+        .btn-drive { 
+            background: linear-gradient(135deg, #0a1128, #162245); color: #00e5ff; 
+            border: 1px solid rgba(0, 229, 255, 0.5); 
+            box-shadow: 0 0 15px rgba(0, 150, 255, 0.4);
+        }
+        .btn-drive:active { background: #00e5ff; color: #000; }
 
         #status-overlay {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7); color: #00ffcc; padding: 10px 20px;
-            border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 1000; border: 1px solid rgba(0, 255, 204, 0.3);
+            position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85); color: #00e5ff; padding: 12px 24px;
+            border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 1000; 
+            border: 1px solid rgba(0, 229, 255, 0.3); text-align: center; width: 85%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(5px);
         }
         
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
-            background: rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%);
-            z-index: 50; display: none; pointer-events: none;
+            position: absolute; top: 50%; left: 50%; width: 14px; height: 14px;
+            background: rgba(255,255,255,0.9); border-radius: 50%; transform: translate(-50%, -50%);
+            z-index: 50; display: none; pointer-events: none; border: 2px solid #000;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
     </style>
     
@@ -57,18 +87,18 @@
 </head>
 <body>
     
-    <div id="status-overlay">Loading Environment...</div>
+    <div id="status-overlay">Loading... Click "START AR" when ready.</div>
     <div id="crosshair"></div>
 
     <div id="ui-container">
-        <h3>DESIGN YOUR TRACK</h3>
-        <div class="color-btn" style="background: #ff2a2a;" onclick="changeColor(0xff2a2a)"></div>
-        <div class="color-btn" style="background: #0066ff;" onclick="changeColor(0x0066ff)"></div>
-        <div class="color-btn" style="background: #00ffaa;" onclick="changeColor(0x00ffaa)"></div>
-        <div class="color-btn" style="background: #ffffff;" onclick="changeColor(0xffffff)"></div>
+        <h3>DRAW YOUR TRACK</h3>
+        <div class="color-btn" style="background: #ff1a1a; box-shadow: 0 0 10px #ff1a1a;" onclick="changeColor(0xff1a1a)"></div>
+        <div class="color-btn" style="background: #0055ff; box-shadow: 0 0 10px #0055ff;" onclick="changeColor(0x0055ff)"></div>
+        <div class="color-btn" style="background: #00ffaa; box-shadow: 0 0 10px #00ffaa;" onclick="changeColor(0x00ffaa)"></div>
+        <div class="color-btn" style="background: #ffffff; box-shadow: 0 0 10px #ffffff;" onclick="changeColor(0xffffff)"></div>
         <div class="controls">
             <button class="btn-clear" onclick="clearDrawings()">Clear</button>
-            <button class="btn-drive" onclick="start3DDrive()">3D View</button>
+            <button class="btn-drive" onclick="start3DDrive()">Ride Track</button>
         </div>
     </div>
 
@@ -80,17 +110,17 @@
         let isDrawing = false;
         let currentLine;
         
-        // Data storage for paths and rendering
-        let linesData = []; // Stores raw points for the driving curve
-        let renderedLines = []; // Stores the 3D meshes
+        let linesData = []; 
+        let renderedLines = []; 
         
-        let currentColor = 0xff2a2a; 
-        let appState = 'AR_DRAWING'; // States: AR_DRAWING, 3D_DRIVING
+        let currentColor = 0xff1a1a; 
+        let appState = 'AR_DRAWING'; 
         
-        // FPP Driving Variables
+        // 3D Ride Variables
         let carMesh;
         let driveCurve;
         let driveProgress = 0;
+        let trackMesh;
 
         init();
         animate();
@@ -102,7 +132,7 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
 
-            const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+            const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
             light.position.set(0.5, 1, 0.25);
             scene.add(light);
 
@@ -112,17 +142,12 @@
             renderer.xr.enabled = true; 
             container.appendChild(renderer.domElement);
 
-            // Request hand-tracking if available, fallback to standard AR
-            const arButton = ARButton.createButton(renderer, { 
+            document.body.appendChild(ARButton.createButton(renderer, { 
                 requiredFeatures: ['hit-test'],
-                optionalFeatures: ['dom-overlay', 'hand-tracking'],
+                optionalFeatures: ['dom-overlay'],
                 domOverlay: { root: document.body } 
-            });
-            document.body.appendChild(arButton);
+            }));
 
-            document.getElementById('status-overlay').innerText = "Ready. Click Enter AR.";
-
-            // AR Controller setup
             controller = renderer.xr.getController(0);
             controller.addEventListener('selectstart', onSelectStart);
             controller.addEventListener('selectend', onSelectEnd);
@@ -130,21 +155,24 @@
 
             window.addEventListener('resize', onWindowResize);
 
-            // AR Session Events
+            // AR Events - Mobile Specific Handling
             renderer.xr.addEventListener('sessionstart', () => {
                 appState = 'AR_DRAWING';
+                scene.background = null; 
                 document.getElementById('ui-container').style.display = 'block';
                 document.getElementById('crosshair').style.display = 'block';
-                document.getElementById('status-overlay').innerText = "Pinch/Hold to Draw Roads";
+                document.getElementById('status-overlay').innerText = "Hold screen to draw!";
             });
             
             renderer.xr.addEventListener('sessionend', () => {
                 document.getElementById('ui-container').style.display = 'none';
                 document.getElementById('crosshair').style.display = 'none';
                 
-                // If user manually exited AR but didn't click Drive, reset status
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+
                 if(appState === 'AR_DRAWING') {
-                    document.getElementById('status-overlay').innerText = "AR Exited. Ready.";
+                    document.getElementById('status-overlay').innerText = "AR Exited. Refresh to restart.";
                 }
             });
         }
@@ -155,16 +183,17 @@
             renderedLines.forEach(line => scene.remove(line));
             renderedLines = [];
             linesData = [];
+            if(trackMesh) scene.remove(trackMesh);
+            if(carMesh) scene.remove(carMesh);
         }
 
-        // --- AR DRAWING LOGIC ---
         function onSelectStart() {
             if(appState !== 'AR_DRAWING') return;
             isDrawing = true;
             
             const material = new THREE.LineBasicMaterial({ color: currentColor, linewidth: 8 });
             const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(3000); // 1000 points max per road
+            const positions = new Float32Array(3000); 
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.setDrawRange(0, 0);
 
@@ -181,52 +210,46 @@
             currentLine = null;
         }
 
-        // --- 3D FPP DRIVING LOGIC ---
         window.start3DDrive = async function() {
-            if (linesData.length === 0 || linesData[0].length < 5) {
-                document.getElementById('status-overlay').innerText = "Please draw a longer road first!";
+            if (linesData.length === 0 || linesData[0].length < 10) {
+                alert("Please draw a longer continuous track first!");
                 return;
             }
 
-            appState = '3D_DRIVING';
+            appState = 'TRANSITIONING';
             document.getElementById('status-overlay').innerText = "Generating 3D World...";
-            document.getElementById('ui-container').style.display = 'none';
-            document.getElementById('crosshair').style.display = 'none';
 
-            // 1. Exit AR Mode
             const session = renderer.xr.getSession();
             if (session) {
                 await session.end();
             }
 
-            // 2. Build the 3D Virtual World
-            scene.background = new THREE.Color(0x0a0f1e); // Dark night sky
-            
-            // Add a virtual floor
-            const floorGeo = new THREE.PlaneGeometry(100, 100);
-            const floorMat = new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.DoubleSide });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = Math.PI / 2;
-            floor.position.y = -1; // Push floor down slightly
-            scene.add(floor);
+            appState = '3D_DRIVING';
 
-            // 3. Create a smooth driving path using CatmullRomCurve3
-            // We take the very first road the user drew
-            driveCurve = new THREE.CatmullRomCurve3(linesData[0]);
+            // Switch to Dark 3D Environment
+            scene.background = new THREE.Color(0x050508); 
             
-            // 4. Create the Virtual Car (A futuristic neon box for now)
-            const carGeo = new THREE.BoxGeometry(0.15, 0.1, 0.3); // Width, Height, Length
-            const carMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x550000 });
+            const gridHelper = new THREE.GridHelper(50, 50, 0x0055ff, 0x111111);
+            gridHelper.position.y = -1;
+            scene.add(gridHelper);
+
+            // Generate Track
+            driveCurve = new THREE.CatmullRomCurve3(linesData[0], false); 
+            const tubeGeo = new THREE.TubeGeometry(driveCurve, 200, 0.02, 8, false);
+            
+            // Give track a glowing wireframe look
+            const tubeMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true, transparent: true, opacity: 0.8 });
+            trackMesh = new THREE.Mesh(tubeGeo, tubeMat);
+            scene.add(trackMesh);
+
+            // Create Vehicle
+            const carGeo = new THREE.BoxGeometry(0.1, 0.05, 0.2);
+            const carMat = new THREE.MeshStandardMaterial({ color: 0xff1a1a, emissive: 0x550000 });
             carMesh = new THREE.Mesh(carGeo, carMat);
             scene.add(carMesh);
 
-            // Add headlights to the car
-            const headLight = new THREE.PointLight(0xffffff, 1, 5);
-            headLight.position.set(0, 0, -0.2);
-            carMesh.add(headLight);
-
-            document.getElementById('status-overlay').innerText = "First Person View: Driving...";
-            driveProgress = 0; // Reset drive position
+            document.getElementById('status-overlay').innerText = "Riding! (Move phone to look)";
+            driveProgress = 0; 
         }
 
         function onWindowResize() {
@@ -241,15 +264,13 @@
 
         function render() {
             if (appState === 'AR_DRAWING' && isDrawing && currentLine) {
-                // Drawing Logic
                 const position = new THREE.Vector3();
-                position.set(0, 0, -0.4).applyMatrix4(controller.matrixWorld);
+                position.set(0, 0, -0.3).applyMatrix4(controller.matrixWorld);
 
                 const positions = currentLine.geometry.attributes.position.array;
                 const userData = currentLine.userData;
                 let count = userData.pointsCount;
 
-                // Save point if it's far enough from the last point (prevents jitter and saves memory)
                 let shouldAddPoint = true;
                 if (count > 0) {
                     const lastPoint = userData.pointsArray[userData.pointsArray.length - 1];
@@ -264,32 +285,26 @@
                     positions[count * 3 + 2] = position.z;
                     
                     userData.pointsCount++;
-                    userData.pointsArray.push(position.clone()); // Save raw Vector3 for the driving curve
+                    userData.pointsArray.push(position.clone()); 
                     
                     currentLine.geometry.setDrawRange(0, userData.pointsCount);
                     currentLine.geometry.attributes.position.needsUpdate = true;
                 }
             } 
             else if (appState === '3D_DRIVING' && driveCurve && carMesh) {
-                // FPP Driving Logic
-                driveProgress += 0.001; // Speed of the car
-                if (driveProgress > 1) driveProgress = 0; // Loop the track
-
-                // Get current position on the curve
-                const currentPos = driveCurve.getPointAt(driveProgress);
                 
-                // Get a point slightly ahead to look at
-                const lookAheadProgress = (driveProgress + 0.01 > 1) ? 0 : driveProgress + 0.01;
+                driveProgress += 0.002; 
+                if (driveProgress >= 0.99) driveProgress = 0; 
+
+                const currentPos = driveCurve.getPointAt(driveProgress);
+                const lookAheadProgress = Math.min(1.0, driveProgress + 0.01);
                 const lookAheadPos = driveCurve.getPointAt(lookAheadProgress);
 
-                // Move and rotate the car
                 carMesh.position.copy(currentPos);
                 carMesh.lookAt(lookAheadPos);
 
-                // Hijack the camera for First Person Perspective (FPP)
-                // Place camera slightly above and behind the front of the car
-                const cameraOffset = new THREE.Vector3(0, 0.08, 0.05); 
-                cameraOffset.applyQuaternion(carMesh.quaternion); // Rotate offset to match car direction
+                const cameraOffset = new THREE.Vector3(0, 0.1, 0.3); 
+                cameraOffset.applyQuaternion(carMesh.quaternion); 
                 
                 camera.position.copy(carMesh.position).add(cameraOffset);
                 camera.lookAt(lookAheadPos);
